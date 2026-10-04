@@ -1,0 +1,16 @@
+# Keys to force in server.properties after every pack update.
+#
+# Why not override the whole file: the pack edits server.properties between
+# versions (motd, defaults), and a full-file override silently discards all of
+# it. We only own these specific keys.
+#
+# Format: key=value, one per line. '#' comments and blank lines ignored.
+
+# Verify logins against LittleSkin. Off would mean anyone can join as any name.
+online-mode=true
+# LittleSkin signs profiles, but chat signing enforcement is not wanted here.
+enforce-secure-profile=false
+# Small private server.
+max-players=10
+# Only names in whitelist.json may join.
+white-list=true

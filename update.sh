@@ -71,6 +71,42 @@ if [[ -d $ROOT/overrides ]] && [[ -n $(ls -A "$ROOT/overrides") ]]; then
 	rsync -a "$ROOT/overrides/" "$SERVER/"
 fi
 
+# server.properties gets key-level treatment, not a whole-file override: the
+# pack changes motd and other defaults between versions, and replacing the
+# whole file would silently throw those away.
+if [[ -f $ROOT/server.properties.patch ]]; then
+	echo "Patching server.properties keys"
+	python3 - "$SERVER/server.properties" "$ROOT/server.properties.patch" <<'PY'
+import sys
+
+target, patch = sys.argv[1], sys.argv[2]
+want = {}
+for line in open(patch):
+    line = line.strip()
+    if line and not line.startswith("#") and "=" in line:
+        k, v = line.split("=", 1)
+        want[k.strip()] = v.strip()
+
+out, seen = [], set()
+for line in open(target):
+    s = line.strip()
+    if s and not s.startswith("#") and "=" in s:
+        k = s.split("=", 1)[0].strip()
+        if k in want:
+            seen.add(k)
+            out.append(f"{k}={want[k]}\n")
+            continue
+    out.append(line)
+# Keys the pack does not ship at all still need to be set.
+for k, v in want.items():
+    if k not in seen:
+        out.append(f"{k}={v}\n")
+
+open(target, "w").writelines(out)
+print("  set: " + ", ".join(f"{k}={v}" for k, v in sorted(want.items())))
+PY
+fi
+
 basename "$PACK" > "$ROOT/.current"
 # New pack may ship new top-level entries; keep .gitignore in step.
 if [[ -x $ROOT/gen-ignore.sh ]]; then "$ROOT/gen-ignore.sh" >/dev/null; fi

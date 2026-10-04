@@ -15,6 +15,7 @@ console, and keep LittleSkin external login wired up across updates.
 /srv/tfg/tfg-cmd        send a console command
 /srv/tfg/tfg-log        follow the console
 /srv/tfg/slp.py         server-list ping, to check reachability
+/srv/tfg/server.properties.patch  keys we force in server.properties
 /srv/tfg/systemd/       the service unit (symlinked into ~/.config/systemd/user)
 /srv/terrafirmagreg/    the live server (NOT in git: ~550 MB of mod jars)
 ```
@@ -71,8 +72,8 @@ on your home network can see it, not only tailnet devices. That is usually
 what you want (LAN players skip the tailnet), and `online-mode=true` still
 forces a real LittleSkin login, so it is not open to anonymous joins.
 
-To make it tailnet-only, set `server-ip=100.104.248.8` in
-`overrides/server.properties` and re-apply. Trade-off worth knowing before you
+To make it tailnet-only, add `server-ip=100.104.248.8` to
+`server.properties.patch` and re-run `update.sh`. Trade-off worth knowing before you
 do: the server then fails to bind if `tailscale0` is not up yet at boot, and
 with `Restart=on-failure` capped at 3 tries it could give up after a reboot
 race. Binding `0.0.0.0` has no such startup ordering problem, which is why it
@@ -92,11 +93,11 @@ tfg-cmd whitelist list
 ```
 
 `whitelist.json` and `ops.json` are your data, so they survive pack updates
-untouched. But `whitelist on/off` is runtime state that Minecraft writes to
-`server.properties`, which is pack-owned and gets replaced. So the on/off
-switch also lives in `overrides/server.properties` as `white-list=true`.
-**If you ever `whitelist off` and want it to stick, change the override too**,
-otherwise the next update silently turns it back on.
+untouched. But `whitelist on/off` is runtime state Minecraft writes into
+`server.properties`, which is pack-owned and gets replaced, so the switch is
+pinned in `server.properties.patch` as `white-list=true`. **If you ever
+`whitelist off` and want it to stick, change that file too**, otherwise the
+next update turns it back on.
 
 Names are resolved through LittleSkin, not Mojang. Verified: `rek3000` got
 UUID `4c4aeaaa-d2f2-4261-b6a3-32ee6974ac4b`, which matches
@@ -188,11 +189,12 @@ So: **never hand-edit a pack-owned file and expect it to survive.** Put your
 version in `/srv/tfg/overrides/` with the same relative path, e.g.
 
 ```
-/srv/tfg/overrides/server.properties
 /srv/tfg/overrides/defaultconfigs/tfc-server.toml
 /srv/tfg/overrides/mods/some-extra-mod.jar
 /srv/tfg/overrides/authlib-injector.jar
 ```
+
+(For `server.properties`, use `server.properties.patch` instead, see below.)
 
 Overrides are copied in last (via `rsync -a`, so the exec bit is preserved), so
 they always win. Already set up this way:
@@ -202,7 +204,21 @@ they always win. Already set up this way:
 | `authlib-injector.jar` | the agent itself |
 | `user_jvm_args.txt` | memory + `-javaagent:...=littleskin.cn` |
 | `start_server.sh` | the pack version put `-Xmx` after `-jar`, where the JVM ignores it |
-| `server.properties` | `online-mode=true`, `enforce-secure-profile=false` |
+
+`server.properties` is deliberately **not** a whole-file override. The pack
+edits it between versions (the MOTD carries the pack version, defaults change),
+and a full-file copy silently discards all of that. Instead
+`server.properties.patch` lists just the keys we own, and `update.sh` rewrites
+those lines in place:
+
+```
+online-mode=true            # verify logins with LittleSkin
+enforce-secure-profile=false
+max-players=10
+white-list=true
+```
+
+Add a key there to own it, remove it to hand it back to the pack.
 
 ## LittleSkin external login (authlib-injector)
 

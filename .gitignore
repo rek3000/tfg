@@ -11,7 +11,7 @@ overrides/**/*token*
 overrides/**/*.key
 overrides/**/*.pem
 
-# Pack-owned top-level entries, from TerraFirmaGreg-Modern-0.12.10-serverpack.zip.
+# Pack-owned top-level entries, from TerraFirmaGreg-Modern-0.13.10-serverpack.zip.
 # Listed so a stray copy of the pack unpacked in here cannot be
 # committed. overrides/ is exempt: holding such files is its job.
 /config
