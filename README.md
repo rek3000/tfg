@@ -14,6 +14,7 @@ console, and keep LittleSkin external login wired up across updates.
 /srv/tfg/gen-ignore.sh  regenerates .gitignore from the pack contents
 /srv/tfg/tfg-cmd        send a console command
 /srv/tfg/tfg-log        follow the console
+/srv/tfg/slp.py         server-list ping, to check reachability
 /srv/tfg/systemd/       the service unit (symlinked into ~/.config/systemd/user)
 /srv/terrafirmagreg/    the live server (NOT in git: ~550 MB of mod jars)
 ```
@@ -39,6 +40,52 @@ pack-owned part of `.gitignore` is **generated** by `gen-ignore.sh` from the
 zip's own top-level listing, and `update.sh` re-runs it, so a future pack that
 adds a top-level folder is ignored without anyone editing a list. Edit
 `gen-ignore.sh`, never `.gitignore`.
+
+## Connecting (Tailscale)
+
+The box is on the tailnet as **`basement`**, so add this server in Minecraft:
+
+```
+basement.tail686c45.ts.net
+```
+
+or by IP, `100.104.248.8`. No port needed, it is the default 25565.
+
+Nothing extra to install or configure: the server binds `0.0.0.0`, which
+already covers `tailscale0`, and the tailnet has shields-up off. Your laptop
+just needs to be logged into the same tailnet (`tailscale up`) and awake.
+
+Check it from anywhere on the tailnet:
+
+```
+./slp.py basement.tail686c45.ts.net     # real server-list ping, not just a TCP open
+```
+
+Deliberately **not** using `tailscale serve`/`funnel`: those terminate HTTP/TLS,
+and the Minecraft protocol is neither.
+
+### It is also exposed on your LAN
+
+`server-ip=0.0.0.0` means the server also answers on `192.168.1.4`, so anyone
+on your home network can see it, not only tailnet devices. That is usually
+what you want (LAN players skip the tailnet), and `online-mode=true` still
+forces a real LittleSkin login, so it is not open to anonymous joins.
+
+To make it tailnet-only, set `server-ip=100.104.248.8` in
+`overrides/server.properties` and re-apply. Trade-off worth knowing before you
+do: the server then fails to bind if `tailscale0` is not up yet at boot, and
+with `Restart=on-failure` capped at 3 tries it could give up after a reboot
+race. Binding `0.0.0.0` has no such startup ordering problem, which is why it
+is the default here.
+
+To restrict who can join instead, which is the safer lever:
+
+```
+tfg-cmd whitelist add <yourname>
+tfg-cmd whitelist on
+```
+
+(`white-list=false` today, so anyone with a LittleSkin account can join.)
 
 ## Running it
 
