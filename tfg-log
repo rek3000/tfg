@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Follow the server console output. Ctrl-C just stops watching; it does not
+# touch the server.
+exec journalctl --user -u terrafirmagreg -f -o cat "$@"

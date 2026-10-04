@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Send a command to the running server console and show what it replied.
+#
+#   tfg-cmd say hello
+#   tfg-cmd whitelist add Steve
+#   tfg-cmd "time set day"
+#   tfg-cmd stop            # or: systemctl --user stop terrafirmagreg
+#
+# For a live feed of everything instead: tfg-log
+set -euo pipefail
+FIFO=/srv/terrafirmagreg/console.fifo
+UNIT=terrafirmagreg
+
+[[ $# -gt 0 ]] || { echo "usage: $(basename "$0") <minecraft command>" >&2; exit 1; }
+[[ -p $FIFO ]] || {
+	echo "Server is not running (no $FIFO)." >&2
+	echo "Start it with: systemctl --user start $UNIT" >&2
+	exit 1
+}
+
+# Mark our place in the log so we only show this command's output.
+CURSOR=$(journalctl --user -u "$UNIT" -n0 --show-cursor -o cat 2>/dev/null |
+	sed -n 's/^-- cursor: //p')
+
+printf '%s\n' "$*" > "$FIFO"
+
+# The server replies on its own thread, so give it a moment.
+sleep 1.5
+if [[ -n $CURSOR ]]; then
+	journalctl --user -u "$UNIT" --after-cursor "$CURSOR" --no-pager -o cat 2>/dev/null |
+		sed 's/^\[[0-9:]*\] \[[^]]*\] //'
+else
+	journalctl --user -u "$UNIT" --since '-3s' --no-pager -o cat 2>/dev/null | tail -20
+fi

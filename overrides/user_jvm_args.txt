@@ -1,0 +1,15 @@
+# JVM args for the actual Forge server process.
+#
+# minecraft_server.jar is HellBz's ServerStarter: it installs Forge, then
+# launches a SECOND java process from libraries/.../unix_args.txt. That child
+# is the real server, and it reads this file. So -javaagent must live here,
+# not in start_server.sh.
+#
+# Note: once this file exists, the starter ignores the -Xmx/-Xms in
+# start_server.sh, so memory is set here.
+-Xms1024M
+-Xmx6024M
+
+# LittleSkin external login (authlib-injector expands littleskin.cn to
+# https://littleskin.cn/api/yggdrasil).
+-javaagent:authlib-injector.jar=littleskin.cn

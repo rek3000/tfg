@@ -1,0 +1,25 @@
+[Unit]
+Description=TerraFirmaGreg Minecraft server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/terrafirmagreg
+ExecStart=/srv/tfg/run.sh
+
+# Shutdown goes through the console "stop" command (see run.sh), so give the
+# world time to save. A heavily modded TFG world can take a while.
+KillSignal=SIGTERM
+TimeoutStopSec=300
+# Only the wrapper gets the signal; it stops the JVM itself in the right order.
+KillMode=mixed
+
+Restart=on-failure
+RestartSec=20
+# Do not fight a server that is crash-looping on a bad mod/config.
+StartLimitBurst=3
+StartLimitIntervalSec=600
+
+[Install]
+WantedBy=default.target
