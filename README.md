@@ -78,14 +78,30 @@ with `Restart=on-failure` capped at 3 tries it could give up after a reboot
 race. Binding `0.0.0.0` has no such startup ordering problem, which is why it
 is the default here.
 
-To restrict who can join instead, which is the safer lever:
+To restrict *who* can join, which is the safer lever, see below. It is already
+on.
+
+### Who can join
+
+Whitelist is **on**, with `rek3000` whitelisted and operator (level 4).
 
 ```
-tfg-cmd whitelist add <yourname>
-tfg-cmd whitelist on
+tfg-cmd whitelist add <name>
+tfg-cmd whitelist remove <name>
+tfg-cmd whitelist list
 ```
 
-(`white-list=false` today, so anyone with a LittleSkin account can join.)
+`whitelist.json` and `ops.json` are your data, so they survive pack updates
+untouched. But `whitelist on/off` is runtime state that Minecraft writes to
+`server.properties`, which is pack-owned and gets replaced. So the on/off
+switch also lives in `overrides/server.properties` as `white-list=true`.
+**If you ever `whitelist off` and want it to stick, change the override too**,
+otherwise the next update silently turns it back on.
+
+Names are resolved through LittleSkin, not Mojang. Verified: `rek3000` got
+UUID `4c4aeaaa-d2f2-4261-b6a3-32ee6974ac4b`, which matches
+`littleskin.cn/api/yggdrasil`'s answer exactly. A Mojang account with the same
+name would have a different UUID and would not match this whitelist entry.
 
 ## Running it
 
